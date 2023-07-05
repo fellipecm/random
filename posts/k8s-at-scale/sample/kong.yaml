@@ -1,0 +1,86 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx-deployment
+  namespace: default
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/preserve-host: "false"
+    konghq.com/plugins: basic-auth,nginx,nginx-rate # The difference is that we are enabling the plugins now
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: nginx-deployment
+                port:
+                  number: 80
+---
+apiVersion: configuration.konghq.com/v1
+config:
+  hide_credentials: true
+kind: KongPlugin
+metadata:
+  name: basic-auth
+  namespace: default
+plugin: basic-auth
+---
+apiVersion: configuration.konghq.com/v1
+config:
+  allow:
+  - nginx
+  hide_groups_header: false
+kind: KongPlugin
+metadata:
+  name: nginx
+  namespace: default
+plugin: acl
+---
+apiVersion: configuration.konghq.com/v1
+config:
+  fault_tolerant: true
+  hide_client_headers: false
+  limit_by: consumer
+  policy: local
+  minute: 6
+kind: KongPlugin
+metadata:
+  name: nginx-rate
+  namespace: default
+plugin: rate-limiting
+---
+apiVersion: v1
+data:
+  group: bmdpbng=
+  kongCredType: YWNs
+kind: Secret
+metadata:
+  name: nginx-acl
+  namespace: default
+---
+apiVersion: v1
+data:
+  kongCredType: YmFzaWMtYXV0aA==
+  password: NDQ5YzY2N2MtMGM4ZC00NTVkLWFlZTYtMTdlYzE4ZGIzYzEy
+  username: YjhmMWMzMGYtODQwMi00MmFkLThkYmUtY2YwZTgzOWIzNzVi
+kind: Secret
+metadata:
+  name: nginx-cred
+  namespace: default
+---
+apiVersion: configuration.konghq.com/v1
+credentials:
+- nginx-acl
+- nginx-cred
+kind: KongConsumer
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+  name: nginx
+  namespace: default
+username: b8f1c30f-8402-42ad-8dbe-cf0e839b375b
+...

@@ -1,0 +1,40 @@
+# Configure global settings in this section.
+global:
+  name: consul
+  logLevel: info
+  gossipEncryption:
+    autoGenerate: true
+  tls:
+    enabled: true
+    enableAutoEncrypt: true
+  acls:
+    # you usually want to enable this
+    manageSystemACLs: false
+  metrics:
+    enabled: true
+    enableAgentMetrics: true
+    agentMetricsRetentionTime: "1m"
+# Configure your Consul servers in this section.
+server:
+  # Specify three servers that wait until all are healthy to bootstrap the Consul cluster.
+  replicas: 1
+client:
+  # in 1.X you probably don't want to use this - disabled by default
+  enabled: false
+  grpc: true
+# this is useful to check traffic in the Consul UI, for production you want a separate installation
+# you can use this reference (still not prod ready but it has the separate install): https://developer.hashicorp.com/consul/tutorials/kubernetes/kubernetes-layer7-observability
+prometheus:
+  enabled: true
+# Enable and configure the Consul UI.
+ui:
+  enabled: true
+  service:
+    type: LoadBalancer
+  metrics:
+    enabled: true
+    provider: "prometheus"
+    baseURL: http://prometheus-server.consul.svc.cluster.local
+    # the below is if you want to specify an IP
+    # additionalSpec: |
+    #   loadBalancerIP: 192.168.0.226

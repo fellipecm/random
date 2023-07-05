@@ -1,0 +1,40 @@
+---
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: Mesh
+metadata:
+  name: mesh
+  namespace: consul
+spec:
+  transparentProxy:
+    meshDestinationsOnly: true
+---
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ProxyDefaults
+metadata:
+  name: global
+  namespace: consul
+spec:
+  config:
+    protocol: http
+---
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+ name: kong-kong-proxy
+spec:
+ protocol: http
+---
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: default
+  namespace: default 
+spec:
+  destination:
+    name: "*"
+  sources:
+    - name: "*"
+      action: deny
+    - name: "kong-kong-proxy"
+      action: allow
+...

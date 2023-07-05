@@ -1,0 +1,201 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    konghq.com/methods: GET
+    kubernetes.io/ingress.class: kong
+  name: nginx-sample-2
+  namespace: default
+spec:
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: nginx-sample-2
+            port:
+              number: 80
+        path: /sample/2
+        pathType: ImplementationSpecific
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    ingress.kubernetes.io/service-upstream: 'true'
+    konghq.com/override: kong-timeout-limits
+    konghq.com/plugins: basic-auth,nginx-sample-1 #,nginx-sample-1-rate removing this breaks Kong but it does not validate on webhook
+  name: nginx-sample-1
+  namespace: default
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-sample-1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    ingress.kubernetes.io/service-upstream: 'true'
+    konghq.com/override: kong-timeout-limits
+    konghq.com/plugins: basic-auth,nginx-sample-2 #,nginx-sample-2-rate removing this breaks Kong but it does not validate on webhook
+  name: nginx-sample-2
+  namespace: default
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: nginx-sample-2
+---
+apiVersion: configuration.konghq.com/v1
+config:
+  allow:
+  - nginx-sample-1
+  - app
+  hide_groups_header: false
+kind: KongPlugin
+metadata:
+  name: nginx-sample-1
+  namespace: default
+plugin: acl
+---
+apiVersion: configuration.konghq.com/v1
+config:
+  allow:
+  - nginx-sample-2
+  - app
+  hide_groups_header: false
+kind: KongPlugin
+metadata:
+  name: nginx-sample-2
+  namespace: default
+plugin: acl
+---
+apiVersion: configuration.konghq.com/v1
+config:
+  fault_tolerant: true
+  hide_client_headers: false
+  limit_by: consumer
+  policy: local
+  second: 2000
+kind: KongPlugin
+metadata:
+  name: nginx-sample-1-rate
+  namespace: default
+plugin: rate-limiting
+---
+apiVersion: configuration.konghq.com/v1
+config:
+  fault_tolerant: true
+  hide_client_headers: false
+  limit_by: consumer
+  policy: local
+  second: 2000
+kind: KongPlugin
+metadata:
+  name: nginx-sample-2-rate
+  namespace: default
+plugin: rate-limiting
+---
+apiVersion: v1
+data:
+  kongCredType: YmFzaWMtYXV0aA==
+  password: NDQ5YzY2N2MtMGM4ZC00NTVkLWFlZTYtMTdlYzE4ZGIzYzEy
+  username: YjhmMWMzMGYtODQwMi00MmFkLThkYmUtY2YwZTgzOWIzNzVi
+kind: Secret
+metadata:
+  name: nginx-sample-1-cred
+  namespace: default
+---
+apiVersion: v1
+data:
+  kongCredType: YmFzaWMtYXV0aA==
+  password: NTJlMGUxODMtZWZiMi00NGUyLTk3MzMtMWNmMzViMWNlMDBl
+  username: ODBiMjk5NTAtODM2Ni00MjM2LWI0ZjctYTM5NjNiMDZjMGFi
+kind: Secret
+metadata:
+  name: nginx-sample-2-cred
+  namespace: default
+---
+apiVersion: v1
+data:
+  group: bmdpbngtc2FtcGxlLTE=
+  kongCredType: YWNs
+kind: Secret
+metadata:
+  name: nginx-sample-1-acl
+  namespace: default
+---
+apiVersion: v1
+data:
+  group: bmdpbngtc2FtcGxlLTI=
+  kongCredType: YWNs
+kind: Secret
+metadata:
+  name: nginx-sample-2-acl
+  namespace: default
+---
+apiVersion: configuration.konghq.com/v1
+credentials:
+- nginx-sample-1-acl
+- nginx-sample-1-cred
+kind: KongConsumer
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+  name: nginx-sample-1
+  namespace: default
+username: b8f1c30f-8402-42ad-8dbe-cf0e839b375b
+---
+apiVersion: configuration.konghq.com/v1
+credentials:
+- nginx-sample-2-acl
+- nginx-sample-2-cred
+kind: KongConsumer
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+  name: nginx-sample-2
+  namespace: default
+username: 80b29950-8366-4236-b4f7-a3963b06c0ab
+---
+apiVersion: v1
+data:
+  kongCredType: YmFzaWMtYXV0aA==
+  password: NmVmNzI4ZGUtYmE2OC00ZTU5LWFjYjktNmU1MDJjMjhhZTBi
+  username: Nzc0Zjg0NDYtNjQyNy00M2Y5LTk5NjItY2U3YWI4MDk3ZmU0
+kind: Secret
+metadata:
+  name: app-cred
+  namespace: default
+---
+apiVersion: v1
+data:
+  group: YXBw
+  kongCredType: YWNs
+kind: Secret
+metadata:
+  name: app-acl
+  namespace: default
+---
+apiVersion: configuration.konghq.com/v1
+credentials:
+- app-acl
+- app-cred
+kind: KongConsumer
+metadata:
+  annotations:
+    kubernetes.io/ingress.class: kong
+    konghq.com/plugins: nginx-sample-1-rate,nginx-sample-2-rate
+  name: app
+  namespace: default
+username: 774f8446-6427-43f9-9962-ce7ab8097fe4
+...

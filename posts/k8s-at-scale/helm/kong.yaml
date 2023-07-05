@@ -1,0 +1,21 @@
+deployment:
+ log_level: info
+ serviceAccount:
+   # we need this for Consul
+   name: kong-kong-proxy
+replicaCount: 1
+
+podAnnotations:
+ kuma.io/gateway: disabled
+ consul.hashicorp.com/connect-inject: "true"
+ consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: 80,443,8443,8100,8444,10254,10255
+ consul.hashicorp.com/transparent-proxy-exclude-outbound-ports: 80,443,8000,8443,8100,8444,10254,10255
+ consul.hashicorp.com/transparent-proxy-exclude-outbound-cidrs : "10.128.0.1,10.128.0.10" # we are excludig kubernetes and kube-dns
+proxy:
+  # # the below is if you want to specify an IP
+  # loadBalancerIP: 192.168.0.227
+  http:
+    enabled: false
+  labels:
+    # we need this for Consul
+    consul.hashicorp.com/service-ignore: "true"

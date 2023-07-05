@@ -1,0 +1,5 @@
+.terraform
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+k8s-at-scale-kubeconfig.yaml
